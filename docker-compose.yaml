@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  web:
+    image: php:8.2-apache
+    container_name: cicada_web
+    ports:
+      - "8080:80"
+    volumes:
+      - ./public:/var/www/html
+      - ./config:/var/www/config
+      - ./api:/var/www/html/api
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      - DB_HOST=mysql
+      - DB_NAME=cicada
+      - DB_USER=root
+      - DB_PASS=root
+    command: >
+      bash -c "
+        docker-php-ext-install pdo pdo_mysql mysqli &&
+        a2enmod rewrite &&
+        echo '<Directory /var/www/html>
+          AllowOverride All
+        </Directory>' > /etc/apache2/conf-available/rewrite.conf &&
+        a2enconf rewrite &&
+        chown -R www-data:www-data /var/www/html &&
+        chmod -R 755 /var/www/html &&
+        apache2-foreground
+      "
+
+  mysql:
+    image: mysql:8.0
+    container_name: cicada_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: cicada
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: cicada_phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: root
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
