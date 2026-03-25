@@ -8,6 +8,7 @@ Plateforme web de défis cryptographiques progressifs, les joueurs doivent réso
 
 ```bash
 git clone https://github.com/LucianoIT/cicadainsset.git
+cd cicadainsset
 docker compose up -d
 ```
 
